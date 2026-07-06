@@ -220,8 +220,9 @@ fun MoreScreen(
 @Composable
 private fun RowScope.quickTile(label: String, badge: String?, color: Color, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.weight(1f),
-        onClick = onClick,
+        modifier = Modifier
+            .weight(1f)
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {

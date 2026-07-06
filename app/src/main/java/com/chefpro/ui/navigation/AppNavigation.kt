@@ -213,6 +213,7 @@ fun AppNavigation(viewModel: ChefProViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route?.substringBefore("/{")
         ?: navBackStackEntry?.destination?.route
+    val tabRoute = Routes.tabRouteFor(currentRoute)
     val showPrimaryNav = currentRoute in Routes.bottomTabRoutes
     val useRailLayout = configuration.screenWidthDp >= 840 && isLoggedIn && state.hasSeenOnboarding
     val tabs = buildNavTabs(strings)
@@ -223,7 +224,7 @@ fun AppNavigation(viewModel: ChefProViewModel) {
             if (showPrimaryNav) {
                 ChefProNavigationRail(
                     tabs = tabs,
-                    currentRoute = currentRoute,
+                    currentRoute = tabRoute,
                     onTabSelected = onTabSelected,
                 )
             }
@@ -240,7 +241,7 @@ fun AppNavigation(viewModel: ChefProViewModel) {
                 if (showPrimaryNav) {
                     ChefProBottomBar(
                         tabs = tabs,
-                        currentRoute = currentRoute,
+                        currentRoute = tabRoute,
                         onTabSelected = onTabSelected,
                     )
                 }
@@ -327,7 +328,9 @@ private fun ChefProNavHost(
 
         composable(Routes.MORE) {
             MoreScreen(viewModel) { destination ->
-                navController.navigate(destination.toRoute())
+                navController.navigate(destination.toRoute()) {
+                    launchSingleTop = true
+                }
             }
         }
 
