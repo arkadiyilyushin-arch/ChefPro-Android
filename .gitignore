@@ -13,5 +13,6 @@ ChefPro-v*.apk
 *.aab
 output/
 app/build/
+.kotlin/
 chefpro-release.jks
 keystore.properties

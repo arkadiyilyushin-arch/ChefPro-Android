@@ -1,6 +1,7 @@
 package com.chefpro.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -55,9 +56,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.chefpro.model.ModelHelpers.isCritical
 import com.chefpro.model.ReservationStatus
+import androidx.compose.foundation.isSystemInDarkTheme
+import com.chefpro.ui.components.GradientHeroCard
 import com.chefpro.ui.components.MoreRow
 import com.chefpro.ui.components.MoreSectionBlock
 import com.chefpro.ui.theme.ChefAccent
+import com.chefpro.ui.theme.ChefGradients
 import com.chefpro.ui.viewmodel.ChefProViewModel
 
 enum class MoreDestination {
@@ -96,17 +100,18 @@ fun MoreScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { onNavigate(MoreDestination.PROFILE) },
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            GradientHeroCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigate(MoreDestination.PROFILE) },
+                brush = if (isSystemInDarkTheme()) ChefGradients.heroBrushDark() else ChefGradients.heroBrush(),
             ) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(52.dp)
                             .clip(CircleShape)
-                            .background(ChefAccent),
+                            .background(Color.White.copy(alpha = 0.25f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -117,8 +122,16 @@ fun MoreScreen(
                         )
                     }
                     Column(Modifier.padding(start = 14.dp).weight(1f)) {
-                        Text(state.profile.name, fontWeight = FontWeight.Bold)
-                        Text(state.profile.position, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            state.profile.name,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                        Text(
+                            state.profile.position,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                        )
                     }
                 }
             }

@@ -28,10 +28,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -39,16 +46,27 @@ import androidx.compose.ui.unit.dp
 import com.chefpro.model.ModelHelpers.isExpired
 import com.chefpro.model.ModelHelpers.isExpiringSoon
 import com.chefpro.ui.components.BigCard
+import com.chefpro.ui.components.GradientHeroCard
+import com.chefpro.ui.components.IconCircle
 import com.chefpro.ui.components.InfoCard
 import com.chefpro.ui.components.OfflineStatusBanner
 import com.chefpro.ui.components.SectionTitle
 import com.chefpro.ui.components.StatusBadge
 import com.chefpro.ui.localization.LocalAppStrings
+import com.chefpro.ui.theme.CardShape
+import com.chefpro.ui.theme.ChefGradients
+import com.chefpro.ui.theme.ChefOrange
+import com.chefpro.ui.theme.ChefPurple
+import com.chefpro.ui.theme.ChefTeal
 import com.chefpro.ui.theme.ErrorRed
+import com.chefpro.ui.theme.InfoBlue
 import com.chefpro.ui.theme.SuccessGreen
 import com.chefpro.ui.theme.WarningAmber
 import com.chefpro.ui.viewmodel.ChefProViewModel
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,8 +99,20 @@ fun DashboardScreen(
     val employeeName = currentEmployee?.name ?: state.profile.name
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(title = { Text(state.restaurantName) })
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        state.restaurantName,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
+            )
         },
     ) { padding ->
         LazyColumn(
@@ -100,17 +130,33 @@ fun DashboardScreen(
             }
 
             item {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Text(
-                        text = greeting,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = employeeName,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
+                val heroBrush = if (isSystemInDarkTheme()) ChefGradients.heroBrushDark() else ChefGradients.heroBrush()
+                val dateStr = remember {
+                    SimpleDateFormat("EEEE, d MMMM", Locale("ru", "RU")).format(Date())
+                }
+                GradientHeroCard(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    brush = heroBrush,
+                ) {
+                    Column {
+                        Text(
+                            text = dateStr.replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.85f),
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = greeting,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                        Text(
+                            text = employeeName,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                    }
                 }
             }
 
@@ -233,6 +279,7 @@ fun DashboardScreen(
                         QuickActionCard(
                             label = strings.addDish,
                             icon = Icons.Default.Add,
+                            accent = ChefOrange,
                             onClick = onAddDish,
                         )
                     }
@@ -240,6 +287,7 @@ fun DashboardScreen(
                         QuickActionCard(
                             label = strings.addProduct,
                             icon = Icons.Default.Inventory2,
+                            accent = ChefTeal,
                             onClick = onAddProduct,
                         )
                     }
@@ -247,6 +295,7 @@ fun DashboardScreen(
                         QuickActionCard(
                             label = strings.search,
                             icon = Icons.Default.Search,
+                            accent = InfoBlue,
                             onClick = onNavigateToSearch,
                         )
                     }
@@ -254,6 +303,7 @@ fun DashboardScreen(
                         QuickActionCard(
                             label = strings.techCards,
                             icon = Icons.Default.MenuBook,
+                            accent = ChefPurple,
                             onClick = onNavigateToTechCards,
                         )
                     }
@@ -278,9 +328,7 @@ private fun AlertRow(
         onClick = onClick,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -300,30 +348,30 @@ private fun AlertRow(
 @Composable
 private fun QuickActionCard(
     label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
+    accent: Color,
     onClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier
             .width(120.dp)
+            .shadow(4.dp, CardShape, spotColor = accent.copy(alpha = 0.3f))
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+        colors = CardDefaults.cardColors(containerColor = accent.copy(alpha = 0.12f)),
+        shape = CardShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            IconCircle(icon = icon, tint = accent, background = accent.copy(alpha = 0.2f), size = 44)
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = accent,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
         }

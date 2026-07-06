@@ -11,10 +11,14 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +38,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.chefpro.ui.localization.AppStrings
 import com.chefpro.ui.localization.LocalAppStrings
+import com.chefpro.ui.theme.ChefOrange
+import com.chefpro.ui.theme.ChefOrangeContainer
 import com.chefpro.ui.screens.ABCAnalysisView
 import com.chefpro.ui.screens.AnalyticsView
 import com.chefpro.ui.screens.BackupView
@@ -124,13 +130,22 @@ private fun ChefProBottomBar(
     currentRoute: String?,
     onTabSelected: (String) -> Unit,
 ) {
-    NavigationBar {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = NavigationBarDefaults.Elevation,
+    ) {
         tabs.forEach { tab ->
+            val selected = currentRoute == tab.route
             NavigationBarItem(
-                selected = currentRoute == tab.route,
+                selected = selected,
                 onClick = { onTabSelected(tab.route) },
                 icon = { Icon(tab.icon, contentDescription = tab.label) },
                 label = { Text(tab.label) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = ChefOrange,
+                    selectedTextColor = ChefOrange,
+                    indicatorColor = ChefOrangeContainer,
+                ),
             )
         }
     }
@@ -143,13 +158,22 @@ private fun ChefProNavigationRail(
     onTabSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    NavigationRail(modifier = modifier.fillMaxHeight()) {
+    NavigationRail(
+        modifier = modifier.fillMaxHeight(),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+    ) {
         tabs.forEach { tab ->
+            val selected = currentRoute == tab.route
             NavigationRailItem(
-                selected = currentRoute == tab.route,
+                selected = selected,
                 onClick = { onTabSelected(tab.route) },
                 icon = { Icon(tab.icon, contentDescription = tab.label) },
                 label = { Text(tab.label) },
+                colors = NavigationRailItemDefaults.colors(
+                    selectedIconColor = ChefOrange,
+                    selectedTextColor = ChefOrange,
+                    indicatorColor = ChefOrangeContainer,
+                ),
             )
         }
     }
