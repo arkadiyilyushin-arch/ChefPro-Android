@@ -78,6 +78,12 @@ class ChefProViewModel(application: Application) : AndroidViewModel(application)
     val isSyncing: StateFlow<Boolean> = syncService.isSyncing
     val syncError: StateFlow<String?> = syncService.syncError
 
+    val syncCode: String
+        get() = syncService.syncCode
+
+    val isFirebaseAvailable: Boolean
+        get() = syncService.isFirebaseAvailable
+
     private val _undoAction = MutableStateFlow<UndoableAction?>(null)
     val undoAction: StateFlow<UndoableAction?> = _undoAction.asStateFlow()
 
@@ -130,7 +136,7 @@ class ChefProViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             var loaded = repository.loadState()
             if (loaded.dishes.isEmpty() && loaded.inventoryItems.isEmpty()) {
-                loaded = DemoData.populateDemoData(loaded)
+                loaded = DemoData.resetDemoData()
             }
             if (loaded.checklists.isEmpty()) {
                 loaded = loaded.copy(checklists = defaultChecklists())
@@ -239,6 +245,33 @@ class ChefProViewModel(application: Application) : AndroidViewModel(application)
                 current.inventoryItems
             },
         )
+    }
+
+    fun loadDishPhotoBytes(filename: String): ByteArray? =
+        app.photoStorage.loadDishPhoto(filename)
+
+    fun saveDishPhoto(dishId: String, imageBytes: ByteArray): String {
+        val filename = app.photoStorage.saveDishPhoto(dishId, imageBytes)
+        mutate("Добавлено фото блюда") { current ->
+            current.copy(
+                dishes = current.dishes.map { dish ->
+                    if (dish.id == dishId) dish.copy(photoFilename = filename) else dish
+                },
+            )
+        }
+        return filename
+    }
+
+    fun deleteDishPhoto(dishId: String) {
+        val dish = _state.value.dishes.find { it.id == dishId } ?: return
+        dish.photoFilename?.let { app.photoStorage.deleteDishPhoto(it) }
+        mutate("Удалено фото блюда") { current ->
+            current.copy(
+                dishes = current.dishes.map { d ->
+                    if (d.id == dishId) d.copy(photoFilename = null) else d
+                },
+            )
+        }
     }
 
     fun toggleFavorite(dish: Dish) = mutate(sync = false, persist = true) { current ->
@@ -865,6 +898,41 @@ class ChefProViewModel(application: Application) : AndroidViewModel(application)
                 startRealtimeListeners()
             }
         }
+    }
+
+    fun connectToSyncCode(code: String) {
+        viewModelScope.launch {
+            runCatching {
+                val trimmed = code.trim()
+                val restaurantId = resolveRestaurantId(trimmed)
+                    ?: error("Код синхронизации не найден")
+                syncService.connectToDevice(restaurantId)
+                mergeCloudData(syncService.syncFromCloud().getOrNull())
+                startRealtimeListeners()
+            }
+        }
+    }
+
+    private suspend fun resolveRestaurantId(code: String): String? {
+        val compact = code.uppercase().replace("-", "")
+        if (code.contains("-") && code.length >= 36) return code
+        if (compact.length >= 32) return formatUuid(compact.take(32))
+        return syncService.lookupRestaurantIdBySyncCode(code)
+    }
+
+    private fun formatUuid(compact: String): String {
+        require(compact.length >= 32) { "Invalid UUID" }
+        return buildString {
+            append(compact.substring(0, 8))
+            append('-')
+            append(compact.substring(8, 12))
+            append('-')
+            append(compact.substring(12, 16))
+            append('-')
+            append(compact.substring(16, 20))
+            append('-')
+            append(compact.substring(20, 32))
+        }.lowercase()
     }
 
     fun syncOnForeground() = syncFromCloud()

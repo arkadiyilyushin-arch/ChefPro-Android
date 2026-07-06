@@ -1,5 +1,9 @@
 package com.chefpro.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
@@ -29,6 +34,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +44,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -52,6 +59,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -63,6 +72,7 @@ import com.chefpro.model.DishType
 import com.chefpro.model.RecipeIngredient
 import com.chefpro.model.RecipeVersion
 import com.chefpro.model.newId
+import com.chefpro.ui.components.DishPhotoImage
 import com.chefpro.ui.components.EmptyStateView
 import com.chefpro.ui.components.PermissionGate
 import com.chefpro.ui.components.SectionTitle
@@ -79,6 +89,48 @@ import java.util.Date
 import java.util.Locale
 
 private const val TECH_CARDS_PERMISSION = "Техкарты"
+
+@Composable
+private fun DishPhotoSection(
+    photoFilename: String?,
+    dishId: String,
+    viewModel: ChefProViewModel,
+    modifier: Modifier = Modifier,
+    onPhotoSaved: ((String) -> Unit)? = null,
+) {
+    val context = LocalContext.current
+    val photoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri: Uri? ->
+        uri?.let {
+            context.contentResolver.openInputStream(it)?.use { stream ->
+                val filename = viewModel.saveDishPhoto(dishId, stream.readBytes())
+                onPhotoSaved?.invoke(filename)
+            }
+        }
+    }
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        DishPhotoImage(
+            photoFilename = photoFilename,
+            loadBytes = viewModel::loadDishPhotoBytes,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            contentScale = ContentScale.Crop,
+        )
+        OutlinedButton(
+            onClick = {
+                photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Default.AddAPhoto, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Добавить фото")
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -257,6 +309,14 @@ fun DishDetailScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
+                DishPhotoSection(
+                    photoFilename = dish.photoFilename,
+                    dishId = dish.id,
+                    viewModel = viewModel,
+                )
+            }
+
+            item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     StatusBadge(text = dish.category, color = MaterialTheme.colorScheme.primary)
                     StatusBadge(
@@ -366,6 +426,12 @@ fun DishEditScreen(
     val state by viewModel.state.collectAsState()
     val strings = LocalAppStrings.current
     val existing = dishId?.let { id -> state.dishes.find { it.id == id } }
+    val effectiveDishId = remember(dishId) { dishId ?: newId() }
+    var localPhotoFilename by remember(existing?.photoFilename) {
+        mutableStateOf(existing?.photoFilename)
+    }
+    val displayPhotoFilename = localPhotoFilename
+        ?: state.dishes.find { it.id == effectiveDishId }?.photoFilename
 
     var name by remember(existing) { mutableStateOf(existing?.name ?: "") }
     var category by remember(existing) { mutableStateOf(existing?.category ?: "") }
@@ -413,7 +479,7 @@ fun DishEditScreen(
                 actions = {
                     IconButton(onClick = {
                         val dish = Dish(
-                            id = existing?.id ?: newId(),
+                            id = effectiveDishId,
                             name = name.trim(),
                             category = category.trim(),
                             salePrice = salePrice.toDoubleOrNull() ?: 0.0,
@@ -422,6 +488,7 @@ fun DishEditScreen(
                             isFavorite = existing?.isFavorite ?: false,
                             cookTime = cookTime.toIntOrNull() ?: 0,
                             menuStatus = menuStatus,
+                            photoFilename = localPhotoFilename ?: existing?.photoFilename,
                             steps = steps.toList(),
                             dishType = dishType,
                             portionWeight = portionWeight.toDoubleOrNull() ?: 0.0,
@@ -450,6 +517,13 @@ fun DishEditScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            DishPhotoSection(
+                photoFilename = displayPhotoFilename,
+                dishId = effectiveDishId,
+                viewModel = viewModel,
+                onPhotoSaved = { localPhotoFilename = it },
+            )
+
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },

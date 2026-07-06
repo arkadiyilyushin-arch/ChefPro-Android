@@ -172,6 +172,28 @@ class FirebaseSyncService(context: Context) {
         Unit
     }
 
+    suspend fun lookupRestaurantIdBySyncCode(code: String): String? {
+        val prefix = code.trim().uppercase().replace("-", "").take(8)
+        if (prefix.length < 8) return null
+        if (syncCode == prefix) return restaurantID
+
+        val firestore = db ?: return null
+        ensureIdsLoaded()
+        signInAnonymouslyIfNeeded()
+
+        val byField = firestore.collection("restaurants")
+            .whereEqualTo("syncCode", prefix)
+            .limit(1)
+            .get()
+            .await()
+        if (!byField.isEmpty) return byField.documents.first().id
+
+        val snapshot = firestore.collection("restaurants").get().await()
+        return snapshot.documents.firstOrNull { doc ->
+            doc.id.replace("-", "").uppercase().startsWith(prefix)
+        }?.id
+    }
+
     suspend fun signInAnonymouslyIfNeeded() {
         if (!FirebaseBootstrap.ensureInitialized(appContext)) return
         if (Firebase.auth.currentUser == null) {
@@ -234,6 +256,7 @@ class FirebaseSyncService(context: Context) {
             val rootData = mutableMapOf<String, Any?>(
                 "restaurantName" to state.restaurantName,
                 "restaurantID" to restaurantID,
+                "syncCode" to syncCode,
                 "lastUpdatedByDevice" to deviceID,
                 "updatedAt" to FieldValue.serverTimestamp(),
             )

@@ -1,5 +1,8 @@
 package com.chefpro.ui.navigation
 
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GridView
@@ -10,6 +13,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -26,6 +32,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.chefpro.ui.localization.AppStrings
+import com.chefpro.ui.localization.LocalAppStrings
 import com.chefpro.ui.screens.ABCAnalysisView
 import com.chefpro.ui.screens.AnalyticsView
 import com.chefpro.ui.screens.BackupView
@@ -86,7 +94,6 @@ import com.chefpro.ui.screens.WaiterModeView
 import com.chefpro.ui.screens.WorkScheduleView
 import com.chefpro.ui.screens.WriteOffReportView
 import com.chefpro.ui.screens.WriteOffsView
-import com.chefpro.ui.localization.LocalAppStrings
 import com.chefpro.ui.viewmodel.ChefProViewModel
 
 private data class TabItem(
@@ -95,12 +102,66 @@ private data class TabItem(
     val icon: ImageVector,
 )
 
+private fun buildNavTabs(strings: AppStrings): List<TabItem> = listOf(
+    TabItem(Routes.DASHBOARD, strings.dashboard, Icons.Default.Home),
+    TabItem(Routes.TECH_CARDS, strings.techCards, Icons.Default.MenuBook),
+    TabItem(Routes.SEARCH, strings.search, Icons.Default.Search),
+    TabItem(Routes.INVENTORY, strings.inventory, Icons.Default.Inventory2),
+    TabItem(Routes.MORE, "Ещё", Icons.Default.GridView),
+)
+
+private fun navigateToTab(navController: NavHostController, route: String) {
+    navController.navigate(route) {
+        popUpTo(Routes.DASHBOARD) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
+@Composable
+private fun ChefProBottomBar(
+    tabs: List<TabItem>,
+    currentRoute: String?,
+    onTabSelected: (String) -> Unit,
+) {
+    NavigationBar {
+        tabs.forEach { tab ->
+            NavigationBarItem(
+                selected = currentRoute == tab.route,
+                onClick = { onTabSelected(tab.route) },
+                icon = { Icon(tab.icon, contentDescription = tab.label) },
+                label = { Text(tab.label) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChefProNavigationRail(
+    tabs: List<TabItem>,
+    currentRoute: String?,
+    onTabSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    NavigationRail(modifier = modifier.fillMaxHeight()) {
+        tabs.forEach { tab ->
+            NavigationRailItem(
+                selected = currentRoute == tab.route,
+                onClick = { onTabSelected(tab.route) },
+                icon = { Icon(tab.icon, contentDescription = tab.label) },
+                label = { Text(tab.label) },
+            )
+        }
+    }
+}
+
 @Composable
 fun AppNavigation(viewModel: ChefProViewModel) {
     val navController = rememberNavController()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
     val state by viewModel.state.collectAsState()
     val strings = LocalAppStrings.current
+    val configuration = LocalConfiguration.current
 
     val startDestination = when {
         !isLoggedIn -> Routes.LOGIN
@@ -128,44 +189,46 @@ fun AppNavigation(viewModel: ChefProViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route?.substringBefore("/{")
         ?: navBackStackEntry?.destination?.route
-    val showBottomBar = currentRoute in Routes.bottomTabRoutes
+    val showPrimaryNav = currentRoute in Routes.bottomTabRoutes
+    val useRailLayout = configuration.screenWidthDp >= 840 && isLoggedIn && state.hasSeenOnboarding
+    val tabs = buildNavTabs(strings)
+    val onTabSelected: (String) -> Unit = { route -> navigateToTab(navController, route) }
 
-    val tabs = listOf(
-        TabItem(Routes.DASHBOARD, strings.dashboard, Icons.Default.Home),
-        TabItem(Routes.TECH_CARDS, strings.techCards, Icons.Default.MenuBook),
-        TabItem(Routes.SEARCH, strings.search, Icons.Default.Search),
-        TabItem(Routes.INVENTORY, strings.inventory, Icons.Default.Inventory2),
-        TabItem(Routes.MORE, "Ещё", Icons.Default.GridView),
-    )
-
-    Scaffold(
-        bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    tabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = currentRoute == tab.route,
-                            onClick = {
-                                navController.navigate(tab.route) {
-                                    popUpTo(Routes.DASHBOARD) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) },
-                        )
-                    }
-                }
+    if (useRailLayout) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            if (showPrimaryNav) {
+                ChefProNavigationRail(
+                    tabs = tabs,
+                    currentRoute = currentRoute,
+                    onTabSelected = onTabSelected,
+                )
             }
-        },
-    ) { padding ->
-        ChefProNavHost(
-            navController = navController,
-            viewModel = viewModel,
-            startDestination = startDestination,
-            modifier = Modifier.padding(padding),
-        )
+            ChefProNavHost(
+                navController = navController,
+                viewModel = viewModel,
+                startDestination = startDestination,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    } else {
+        Scaffold(
+            bottomBar = {
+                if (showPrimaryNav) {
+                    ChefProBottomBar(
+                        tabs = tabs,
+                        currentRoute = currentRoute,
+                        onTabSelected = onTabSelected,
+                    )
+                }
+            },
+        ) { padding ->
+            ChefProNavHost(
+                navController = navController,
+                viewModel = viewModel,
+                startDestination = startDestination,
+                modifier = Modifier.padding(padding),
+            )
+        }
     }
 }
 

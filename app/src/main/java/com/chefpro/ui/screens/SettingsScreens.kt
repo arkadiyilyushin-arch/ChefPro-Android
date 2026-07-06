@@ -49,6 +49,7 @@ import com.chefpro.ui.components.OfflineStatusBanner
 import com.chefpro.ui.components.PermissionGate
 import com.chefpro.ui.components.SectionTitle
 import com.chefpro.ui.theme.ChefAccent
+import com.chefpro.ui.theme.SuccessGreen
 import com.chefpro.ui.viewmodel.ChefProViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -171,11 +172,52 @@ fun SyncView(viewModel: ChefProViewModel) {
     val syncError by viewModel.syncError.collectAsState()
     val isOffline by viewModel.isOffline.collectAsState()
     val pending by viewModel.pendingSyncCount.collectAsState()
+    val syncCode = viewModel.syncCode
+    val isFirebaseAvailable = viewModel.isFirebaseAvailable
+    var partnerCode by remember { mutableStateOf("") }
     val dateFormat = remember { SimpleDateFormat("d MMM yyyy, HH:mm", Locale("ru", "RU")) }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Синхронизация") }) }) { padding ->
         Column(Modifier.padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OfflineStatusBanner(isOffline = isOffline, pendingCount = pending)
+            BigCard {
+                Text("Код синхронизации", style = MaterialTheme.typography.labelSmall)
+                Text(
+                    syncCode,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+                Text(
+                    "Передайте этот код партнёру для подключения",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            BigCard {
+                Text(
+                    if (isFirebaseAvailable) "Firebase доступен" else "Firebase недоступен",
+                    fontWeight = FontWeight.Bold,
+                    color = if (isFirebaseAvailable) SuccessGreen else MaterialTheme.colorScheme.error,
+                )
+            }
+            OutlinedTextField(
+                value = partnerCode,
+                onValueChange = { partnerCode = it.uppercase().take(8) },
+                label = { Text("Код партнёра") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            Button(
+                onClick = {
+                    if (partnerCode.isNotBlank()) {
+                        viewModel.connectToSyncCode(partnerCode)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = partnerCode.length == 8,
+            ) {
+                Text("Подключиться")
+            }
             BigCard {
                 Text(if (isSyncing) "Синхронизация…" else "Готово", fontWeight = FontWeight.Bold)
                 Text("Последняя: ${lastSync?.let { dateFormat.format(Date(it)) } ?: "никогда"}", style = MaterialTheme.typography.bodySmall)

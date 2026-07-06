@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /restaurants/{restaurantID} {
+
+      function isMember() {
+        return exists(/databases/$(database)/documents/restaurants/$(restaurantID)/members/$(request.auth.uid));
+      }
+
+      allow read, write: if request.auth != null && isMember();
+
+      match /{collection}/{docId} {
+        allow read, write: if request.auth != null && isMember();
+      }
+
+      match /members/{uid} {
+        allow create: if request.auth != null && request.auth.uid == uid;
+        allow read, delete: if request.auth != null && isMember();
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
