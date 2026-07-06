@@ -70,8 +70,15 @@ data class ChefProCloudData(
 class FirebaseSyncService(context: Context) {
 
     private val appContext = context.applicationContext
-    private val db: FirebaseFirestore = Firebase.firestore
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    val isFirebaseAvailable: Boolean
+        get() = db != null
+
+    private val db: FirebaseFirestore? by lazy {
+        if (!FirebaseBootstrap.ensureInitialized(appContext)) return@lazy null
+        runCatching { Firebase.firestore }.getOrNull()
+    }
 
     private val restaurantIdKey = stringPreferencesKey("chefpro_restaurant_id")
     private val deviceIdKey = stringPreferencesKey("chefpro_device_id")
@@ -166,16 +173,18 @@ class FirebaseSyncService(context: Context) {
     }
 
     suspend fun signInAnonymouslyIfNeeded() {
+        if (!FirebaseBootstrap.ensureInitialized(appContext)) return
         if (Firebase.auth.currentUser == null) {
             Firebase.auth.signInAnonymously().await()
         }
     }
 
     suspend fun registerAsMember() {
+        val firestore = db ?: return
         ensureIdsLoaded()
         signInAnonymouslyIfNeeded()
         val uid = Firebase.auth.currentUser?.uid ?: return
-        db.collection("restaurants")
+        firestore.collection("restaurants")
             .document(restaurantID)
             .collection("members")
             .document(uid)
@@ -190,6 +199,7 @@ class FirebaseSyncService(context: Context) {
     }
 
     suspend fun uploadAll(state: ChefProState) {
+        val firestore = db ?: return
         if (_isOffline.value) {
             _pendingSyncCount.value = _pendingSyncCount.value + 1
             return
@@ -199,7 +209,7 @@ class FirebaseSyncService(context: Context) {
         _syncError.value = null
         try {
             signInAnonymouslyIfNeeded()
-            val root = db.collection("restaurants").document(restaurantID)
+            val root = firestore.collection("restaurants").document(restaurantID)
 
             uploadCollection(state.dishes, root.collection("dishes"))
             uploadCollection(state.inventoryItems, root.collection("inventory"))
@@ -245,13 +255,14 @@ class FirebaseSyncService(context: Context) {
     }
 
     suspend fun syncFromCloud(): Result<ChefProCloudData> = runCatching {
+        val firestore = db ?: return@runCatching ChefProCloudData()
         if (_isSyncing.value) return@runCatching ChefProCloudData()
         ensureIdsLoaded()
         _isSyncing.value = true
         _syncError.value = null
         try {
             signInAnonymouslyIfNeeded()
-            val root = db.collection("restaurants").document(restaurantID)
+            val root = firestore.collection("restaurants").document(restaurantID)
 
             val dishes = downloadCollection<Dish>(root.collection("dishes"))
             val inventoryItems = downloadCollection<InventoryItem>(root.collection("inventory"))
@@ -308,9 +319,10 @@ class FirebaseSyncService(context: Context) {
     }
 
     suspend fun uploadKitchenOrder(order: KitchenOrder) {
+        val firestore = db ?: return
         ensureIdsLoaded()
         signInAnonymouslyIfNeeded()
-        db.collection("restaurants")
+        firestore.collection("restaurants")
             .document(restaurantID)
             .collection("kitchenOrders")
             .document(order.id)
@@ -319,9 +331,10 @@ class FirebaseSyncService(context: Context) {
     }
 
     suspend fun deleteKitchenOrder(id: String) {
+        val firestore = db ?: return
         ensureIdsLoaded()
         signInAnonymouslyIfNeeded()
-        db.collection("restaurants")
+        firestore.collection("restaurants")
             .document(restaurantID)
             .collection("kitchenOrders")
             .document(id)
@@ -330,9 +343,10 @@ class FirebaseSyncService(context: Context) {
     }
 
     suspend fun uploadClosedKitchenOrder(order: KitchenOrder) {
+        val firestore = db ?: return
         ensureIdsLoaded()
         signInAnonymouslyIfNeeded()
-        db.collection("restaurants")
+        firestore.collection("restaurants")
             .document(restaurantID)
             .collection("closedKitchenOrders")
             .document(order.id)
@@ -358,10 +372,11 @@ class FirebaseSyncService(context: Context) {
         onRootDoc: (Shift?, String?) -> Unit,
     ) {
         scope.launch {
+            val firestore = db ?: return@launch
             ensureIdsLoaded()
             stopCollectionListeners()
 
-            val root = db.collection("restaurants").document(restaurantID)
+            val root = firestore.collection("restaurants").document(restaurantID)
             collectionListeners += addListener("dishes", root, onDishes)
             collectionListeners += addListener("inventory", root, onInventory)
             collectionListeners += addListener("employees", root, onEmployees)
@@ -418,7 +433,8 @@ class FirebaseSyncService(context: Context) {
         collection: com.google.firebase.firestore.CollectionReference,
     ) {
         if (items.isEmpty()) return
-        val batch = db.batch()
+        val firestore = db ?: return
+        val batch = firestore.batch()
         items.forEach { item ->
             val id = FirestoreCodec.documentId(item)
             val doc = collection.document(id)

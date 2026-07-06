@@ -28,8 +28,8 @@ class MainActivity : ComponentActivity() {
     ) { /* granted or denied — app works either way */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         requestNotificationPermissionIfNeeded()
 
         val app = ChefProApplication.get(application)

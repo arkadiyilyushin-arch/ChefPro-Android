@@ -142,7 +142,9 @@ class ChefProViewModel(application: Application) : AndroidViewModel(application)
 
             runCatching { syncService.registerAsMember() }
             runCatching { mergeCloudData(syncService.syncFromCloud().getOrNull()) }
-            startRealtimeListeners()
+            if (syncService.isFirebaseAvailable) {
+                startRealtimeListeners()
+            }
         }
     }
 

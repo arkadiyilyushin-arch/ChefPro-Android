@@ -134,6 +134,13 @@ class NotificationHelper(private val context: Context) {
     }
 
     private fun showNotification(id: Int, title: String, body: String, tag: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                appContext,
+                android.Manifest.permission.POST_NOTIFICATIONS,
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (!granted) return
+        }
         val notification = NotificationCompat.Builder(appContext, CHANNEL_ALERTS)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
