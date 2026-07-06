@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ChefPro</string>
+    <string name="widget_title">ChefPro</string>
+    <string name="widget_description">Low stock and active kitchen orders</string>
+    <string name="widget_subtitle">%1$s</string>
+    <string name="widget_low_stock_label">Low stock</string>
+    <string name="widget_kitchen_orders_label">Kitchen orders</string>
+</resources>

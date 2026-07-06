@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ChefPro" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:colorPrimary">@color/chef_accent</item>
+        <item name="android:colorPrimaryDark">@color/chef_accent_dark</item>
+        <item name="android:colorAccent">@color/chef_accent</item>
+        <item name="android:windowBackground">@color/light_background</item>
+    </style>
+</resources>

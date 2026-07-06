@@ -1,0 +1,62 @@
+package com.chefpro.model
+
+import kotlinx.serialization.Serializable
+
+private val defaultProfile = UserProfile(
+    name = "Иван Петров",
+    position = "Шеф-повар",
+    phone = "+47 000 00 000",
+    permissions = listOf(
+        "Техкарты",
+        "Склад",
+        "Приемка",
+        "Списания",
+        "Отчеты",
+        "Настройки",
+    ),
+)
+
+@Serializable
+data class ChefProState(
+    val dishes: List<Dish> = emptyList(),
+    val inventoryItems: List<InventoryItem> = emptyList(),
+    val deliveries: List<Delivery> = emptyList(),
+    val writeOffs: List<WriteOff> = emptyList(),
+    val extraPurchaseItems: List<ExtraPurchaseItem> = emptyList(),
+    val productions: List<Production> = emptyList(),
+    val employees: List<Employee> = emptyList(),
+    val currentEmployeeId: String? = null,
+    val kitchenOrders: List<KitchenOrder> = emptyList(),
+    val profile: UserProfile = defaultProfile,
+    val restaurantName: String = "Demo Restaurant",
+    val appColorScheme: AppColorScheme = AppColorScheme.SYSTEM,
+    val notificationsEnabled: Boolean = false,
+    val suppliers: List<Supplier> = emptyList(),
+    val currentShift: Shift? = null,
+    val shiftHistory: List<Shift> = emptyList(),
+    val closedKitchenOrders: List<KitchenOrder> = emptyList(),
+    val sales: List<Sale> = emptyList(),
+    val foodCostThreshold: Double = 35.0,
+    val currentProductionPlan: List<PlanItem> = emptyList(),
+    val purchaseBudget: Double = 0.0,
+    val monthlyRevenuePlan: Double = 0.0,
+    val monthlyFoodCostTarget: Double = 30.0,
+    val expiryWarningDays: Int = 3,
+    val dailyDigestEnabled: Boolean = false,
+    val haccpRemindersEnabled: Boolean = false,
+    val haccpIntervalHours: Int = 4,
+    val hasSeenOnboarding: Boolean = false,
+    val checklists: List<ChecklistItem> = emptyList(),
+    val menuCollections: List<MenuCollection> = emptyList(),
+    val workSchedule: List<WorkShift> = emptyList(),
+    val temperatureLogs: List<TemperatureLog> = emptyList(),
+    val recipeVersions: List<RecipeVersion> = emptyList(),
+    val appLanguage: AppLanguage = AppLanguage.RUSSIAN,
+    val stockMovements: List<StockMovement> = emptyList(),
+    val operatingExpenses: List<OperatingExpense> = emptyList(),
+    val auditRecords: List<InventoryAuditRecord> = emptyList(),
+    val reservations: List<TableReservation> = emptyList(),
+    val loyaltyCards: List<LoyaltyCard> = emptyList(),
+    val posRecords: List<POSSaleRecord> = emptyList(),
+    val isLoggedIn: Boolean = false,
+)

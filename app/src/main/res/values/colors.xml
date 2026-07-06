@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="chef_accent">#FF6B35</color>
+    <color name="chef_accent_dark">#E85A24</color>
+    <color name="chef_orange_light">#FF8A5C</color>
+    <color name="chef_orange_container">#FFE8DE</color>
+    <color name="chef_on_container">#5C1A00</color>
+    <color name="light_background">#FAF8F6</color>
+    <color name="light_surface">#FFFFFF</color>
+    <color name="success_green">#2E7D32</color>
+    <color name="warning_amber">#F9A825</color>
+    <color name="error_red">#D32F2F</color>
+    <color name="info_blue">#1976D2</color>
+</resources>
